@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+      - alpine
 
 permissions:
   contents: read
@@ -24,7 +25,7 @@ jobs:
           - 5001:5000
 
     env:
-      TEST_TAG: localhost:5001/actions/hello-world-docer-action:latest
+      TEST_TAG: localhost:5001/actions/hello-world-docer-action:alpine
 
     steps:
       - name: Checkout
