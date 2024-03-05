@@ -1,5 +1,5 @@
 # Set the base image to use for subsequent instructions
-FROM almalinux:8.9
+FROM rockylinux:8.9
 
 # Set the working directory inside the container
 WORKDIR /usr/src
