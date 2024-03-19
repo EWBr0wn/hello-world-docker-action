@@ -10,6 +10,7 @@ on:
       - alpine
       - almalinux
       - rockylinux
+      - rockylinux-dev
 
 permissions:
   contents: read
