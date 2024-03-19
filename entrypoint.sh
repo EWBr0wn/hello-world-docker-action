@@ -3,6 +3,7 @@
 if [ -f /etc/os-release ] ; then
   . /etc/os-release
 fi
+pwd
 # Use INPUT_<INPUT_NAME> to get the value of an input
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
