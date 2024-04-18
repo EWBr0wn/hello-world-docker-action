@@ -4,6 +4,13 @@ author: GitHub Actions
 
 # Define your inputs here.
 inputs:
+  spec_file:
+    description: 'Path to the .spec file'
+    required: true
+    default: 'contrib/**/*.spec'                     #Any spec file under the contrib folder
+  additional_repos:
+    description: 'A list of additional repositories to enable'
+    required: false
   who-to-greet:
     description: Who to greet
     required: true
@@ -11,6 +18,16 @@ inputs:
 
 # Define your outputs here.
 outputs:
+  source_rpm_path:
+    description: 'path to Source RPM file'
+  source_rpm_dir_path:
+    description: 'path to SRPMS directory'
+  source_rpm_name:
+    description: 'name of Source RPM file'
+  rpm_dir_path:
+    description: 'path to RPMS directory'
+  rpm_content_type:
+    description: 'Content-type for Upload'
   time:
     description: The time we greeted you
 
@@ -18,4 +35,6 @@ runs:
   using: docker
   image: Dockerfile
   env:
+    SPEC_FILE: ${{ inputs.spec_file }}
+    ADDITIONAL_REPOS: ${{ inputs.additional_repos }}
     INPUT_WHO_TO_GREET: ${{ inputs.who-to-greet }}
