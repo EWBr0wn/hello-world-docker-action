@@ -9,7 +9,7 @@ inputs:
     required: true
     default: 'contrib/**/*.spec'                     #Any spec file under the contrib folder
   additional_repos:
-    description: 'A list of additional repositories to enable'
+    description: 'JSON array of additional repositories to enable'
     required: false
   who-to-greet:
     description: Who to greet
