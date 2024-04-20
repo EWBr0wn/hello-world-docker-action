@@ -7,6 +7,7 @@ RUN yum install --setopt=tsflags=nodocs -y \
       rpmdevtools \
       rpmlint \
       redhat-rpm-config \
+      rsync \
     && yum clean all \
     && rm -rf /var/cache/yum \
     && echo '%_topdir /usr/src/rpmbuild' > ~/.rpmmacros \
