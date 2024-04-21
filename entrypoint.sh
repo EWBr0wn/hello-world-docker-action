@@ -23,7 +23,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   rsync --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} /usr/src/rpmbuild/SPECS/
 
   if [ -n "${ADDITIONAL_REPOS}" ] ; then
-    echo "${ADDITIONAL_REPOS}" | jq .
+    echo "${ADDITIONAL_REPOS}" | jq -r .[]
+    for repo in $(echo "${ADDITIONAL_REPOS}" | jq -r .[]) ; do
+      yum install -y ${repo}
+    done
   fi
   
   #echo "# rpmlint the SPEC_FILE:"
