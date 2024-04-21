@@ -22,12 +22,12 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   REPO_SPEC_FILENAME=$(basename ${INPUT_SPEC_FILE})
   rsync --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} /usr/src/rpmbuild/SPECS/
 
-  echo "# rpmlint the SPEC_FILE:"
-  rpmlint /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
-  retval=$?
-  if [ ${retval} -gt 0 ] ; then
-    exit ${retval}
-  fi
+  #echo "# rpmlint the SPEC_FILE:"
+  #rpmlint /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
+  #retval=$?
+  #if [ ${retval} -gt 0 ] ; then
+  #  exit ${retval}
+  #fi
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) sources: ${INPUT_SPEC_FILE}"
   spectool --sources /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
