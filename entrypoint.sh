@@ -25,7 +25,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   if [ -n "${ADDITIONAL_REPOS}" ] ; then
     echo "${ADDITIONAL_REPOS}" | jq -r .[]
     for repo in $(echo "${ADDITIONAL_REPOS}" | jq -r .[]) ; do
-      yum install -y ${repo}
+      yum-config-manager --enable ${repo}
+      ## Correct answer is to test for URL or string
+      # yum install -y ${repo}
     done
   fi
   
