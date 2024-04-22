@@ -60,10 +60,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   done
 
   echo "# Fetch Source and Patches files from URLs"
-  spectool --get-files ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  spectool --get-files --sourcedir ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
   echo "# Using yum-builddep from yum-utils to install all the build dependencies for a package"
-  ( cd ${RPMBUILDSOURCEDIR} ; yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} )
+  yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
   echo "# Build RPM"
   rpmbuild -ba -v ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
