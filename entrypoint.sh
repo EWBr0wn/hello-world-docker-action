@@ -18,6 +18,7 @@ echo
 
 echo "# user home directory"
 ls -la ~
+id -a
 if [ -f ~/.rpmmacros ] ; then
   cat ~/.rpmmacros
 fi
