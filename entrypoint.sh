@@ -29,7 +29,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   REPO_SPEC_FILENAME=$(basename ${INPUT_SPEC_FILE})
   RPMBUILDSPECSDIR=$(rpm --eval "%_specdir")
   RPMBUILDSOURCEDIR=$(rpm --eval "%_sourcedir")
-  rsync --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} ${RPMBUILDSPECSDIR}/
+  cp --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} ${RPMBUILDSPECSDIR}/
 
   if [ -n "${ADDITIONAL_REPOS}" ] ; then
     echo "${ADDITIONAL_REPOS}" | jq -r .[]
@@ -50,13 +50,13 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) sources: ${INPUT_SPEC_FILE}"
   spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   for f in $(spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    rsync --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
+    cp --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
   done
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) patches: ${INPUT_SPEC_FILE}"
   spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   for p in $(spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    rsync --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
+    cp --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
   done
 
   echo "# Fetch Source and Patches files from URLs"
