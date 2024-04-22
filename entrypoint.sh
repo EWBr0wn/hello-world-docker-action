@@ -63,10 +63,16 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   spectool --get-files ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
   echo "# Using yum-builddep from yum-utils to install all the build dependencies for a package"
-  yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  ( cd ${RPMBUILDSOURCEDIR} ; yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} )
 
   echo "# Build RPM"
   rpmbuild -ba -v ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+
+  echo "# List output RPMs"
+  ls -lR $(rpm --eval "%_rpmdir")
+
+  echo "# List output SRPMs"
+  ls -lR $(rpm --eval "%_srcrpmdir")
 fi
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
