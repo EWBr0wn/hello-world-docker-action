@@ -74,9 +74,34 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   echo "# List output RPMs"
   ls -lR $(rpm --eval "%_rpmdir")
+  echo "# List expected RPMs"
+  rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
-  echo "# List output SRPMs"
+  echo "# List output SRPM"
   ls -lR $(rpm --eval "%_srcrpmdir")
+  echo "# List expected SRPM"
+  rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+
+  # If all is good so far, create output directory
+  if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
+    mkdir -v ${GITHUB_WORKSPACE}/output
+  fi
+
+  # Copy output RPMs
+  rsync --archive --verbose $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
+
+  # set outputs
+  # source_rpm_path:
+  #  description: 'path to Source RPM file'
+  # source_rpm_dir_path:
+  #  description: 'path to SRPMS directory'
+  # source_rpm_name:
+  #  description: 'name of Source RPM file'
+  # rpm_dir_path:
+  #  description: 'path to RPMS directory'
+  
+  # description: 'Content-type for Upload'
+  echo "rpm_content_type=application/x-rpm" >>"$GITHUB_OUTPUT"
 fi
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
