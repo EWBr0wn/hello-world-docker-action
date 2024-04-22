@@ -4,17 +4,24 @@ if [ -f /etc/os-release ] ; then
   . /etc/os-release
 fi
 
-echo "# List env vars" && \
-  env | sort && \
-  echo
+echo "# List env vars"
+env | sort
+echo
 
-echo "# List recursively /usr/src" && \
-  ls -lhR /usr/src && \
-  echo
+echo "# List recursively /usr/src"
+ls -lhR /usr/src
+echo
 
-echo "# List GITHUB_WORKSPACE: ${GITHUB_WORKSPACE}" && \
-  ls -lhR ${GITHUB_WORKSPACE} && \
-  echo
+echo "# List GITHUB_WORKSPACE: ${GITHUB_WORKSPACE}"
+ls -lhR ${GITHUB_WORKSPACE}
+echo
+
+echo "# user home directory"
+ls -la ~
+if [ -f ~/.rpmmacros ] ; then
+  cat ~/.rpmmacros
+fi
+echo
 
 echo "INPUT_SPEC_FILE: ${INPUT_SPEC_FILE}"
 if [ -n "${INPUT_SPEC_FILE}" ] ; then
