@@ -20,7 +20,9 @@ echo "INPUT_SPEC_FILE: ${INPUT_SPEC_FILE}"
 if [ -n "${INPUT_SPEC_FILE}" ] ; then
   REPO_SPEC_DIR=$(dirname ${INPUT_SPEC_FILE})
   REPO_SPEC_FILENAME=$(basename ${INPUT_SPEC_FILE})
-  rsync --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} /usr/src/rpmbuild/SPECS/
+  RPMBUILDSPECSDIR=$(rpm --eval "%_specdir")
+  RPMBUILDSOURCEDIR=$(rpm --eval "%_sourcedir")
+  rsync --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} ${RPMBUILDSPECSDIR}/
 
   if [ -n "${ADDITIONAL_REPOS}" ] ; then
     echo "${ADDITIONAL_REPOS}" | jq -r .[]
@@ -30,35 +32,34 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
       # yum install -y ${repo}
     done
   fi
-  
+
   #echo "# rpmlint the SPEC_FILE:"
-  #rpmlint /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
+  #rpmlint ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   #retval=$?
   #if [ ${retval} -gt 0 ] ; then
   #  exit ${retval}
   #fi
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) sources: ${INPUT_SPEC_FILE}"
-  spectool --sources /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
-  for f in $(spectool --sources /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    rsync --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${f} /usr/src/rpmbuild/SOURCES/
+  spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  for f in $(spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
+    rsync --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
   done
-  # SOURCES=$(spectool --sources /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME} | yq -o=json . )
-  # echo ${SOURCES} | jq .
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) patches: ${INPUT_SPEC_FILE}"
-  spectool --patches /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
-  for p in $(spectool --patches /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    rsync --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${p} /usr/src/rpmbuild/SOURCES/
+  spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  for p in $(spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
+    rsync --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
   done
-  # PATCHES=$(spectool --patches /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME} | yq -o=json . )
-  # echo ${PATCHES} | jq .
 
   echo "# Fetch Source and Patches files from URLs"
-  spectool --get-files /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
+  spectool --get-files ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
   echo "# Using yum-builddep from yum-utils to install all the build dependencies for a package"
-  yum-builddep /usr/src/rpmbuild/SPECS/${REPO_SPEC_FILENAME}
+  yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+
+  echo "# Build RPM"
+  rpmbuild -ba -v ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 fi
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
