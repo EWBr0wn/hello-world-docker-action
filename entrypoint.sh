@@ -16,15 +16,11 @@ echo "# List GITHUB_WORKSPACE: ${GITHUB_WORKSPACE}"
 ls -lhR ${GITHUB_WORKSPACE}
 echo
 
-echo "# user home directory"
-pwd
-cd ~
-pwd
-ls -lR / | grep ".rpmmacros"
-ls -la ~/../
+echo "# user home directory ~/.rpmmacros"
 if [ ! -f ~/.rpmmacros ] ; then
   echo '%_topdir /usr/src/rpmbuild' > ~/.rpmmacros
 fi
+cat ~/.rpmmacros
 echo
 
 echo "INPUT_SPEC_FILE: ${INPUT_SPEC_FILE}"
