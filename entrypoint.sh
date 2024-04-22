@@ -17,10 +17,9 @@ ls -lhR ${GITHUB_WORKSPACE}
 echo
 
 echo "# user home directory"
-ls -la ~
-id -a
-if [ -f ~/.rpmmacros ] ; then
-  cat ~/.rpmmacros
+ls -la ~/../
+if [ ! -f ~/.rpmmacros ] ; then
+  echo '%_topdir /usr/src/rpmbuild' > ~/.rpmmacros
 fi
 echo
 
