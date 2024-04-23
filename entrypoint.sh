@@ -92,8 +92,8 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   # make temp file
   TMPFILE=$(mktemp -q /tmp/.filearray-egrep.XXXXXX)
   echo ${tmp_rpm_array} | jq .
-  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1 "$"}'
-  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1 "$"}' > ${TMPFILE}
+  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}'
+  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}' > ${TMPFILE}
   echo "# finding files"
   find output -type f
   echo "## find files matching the following"
@@ -102,8 +102,8 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))'
   rpm_array=$(find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))')
   echo ${tmp_srpm_array} | jq .
-  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1 "$"}'
-  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1 "$"}' > ${TMPFILE}
+  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1}'
+  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1}' > ${TMPFILE}
   echo "## find files matching the following"
   cat ${TMPFILE}
   echo "# make srpm_array"
