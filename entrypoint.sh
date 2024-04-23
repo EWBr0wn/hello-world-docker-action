@@ -50,13 +50,13 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) sources: ${INPUT_SPEC_FILE}"
   spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   for f in $(spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    cp --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
+    cp --archive --verbose ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
   done
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) patches: ${INPUT_SPEC_FILE}"
   spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   for p in $(spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    cp --archive --verbose ${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
+    cp --archive --verbose ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
   done
 
   echo "# Fetch Source and Patches files from URLs"
@@ -71,12 +71,12 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "# List output RPMs"
   ls -lR $(rpm --eval "%_rpmdir")
   echo "# List expected RPMs"
-  rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
 
   echo "# List output SRPM"
   ls -lR $(rpm --eval "%_srcrpmdir")
   echo "# List expected SRPM"
-  rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
 
   # If all is good so far, create output directory
   if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
