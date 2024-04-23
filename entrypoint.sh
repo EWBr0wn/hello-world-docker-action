@@ -72,13 +72,15 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   ls -lR $(rpm --eval "%_rpmdir")
   echo "# List expected RPMs"
   rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
-  rpm_array=$(rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | sed 's#^#output/#' | jq -R -s -c 'split("\n") | map(select(length>0))')
+  # rpm_array=$(rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | sed 's#^#output/#' | jq -R -s -c 'split("\n") | map(select(length>0))')
+  tmp_rpm_array=$(rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
 
   echo "# List output SRPM"
   ls -lR $(rpm --eval "%_srcrpmdir")
   echo "# List expected SRPM"
   rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
-  srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | sed 's#^#output/#' | jq -R -s -c 'split("\n") | map(select(length>0))')
+  # srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | sed 's#^#output/#' | jq -R -s -c 'split("\n") | map(select(length>0))')
+  tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
 
   # If all is good so far, create output directory
   if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
@@ -87,6 +89,12 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # Copy output RPMs
   rsync --archive --verbose $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
+  # make temp file
+  TMPFILE=$(mktemp -q /tmp/.filearray-egrep.XXXXXX)
+  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1 "$"}' > ${TMPFILE}
+  rpm_array=$(find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))')
+  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1 "$"}' > ${TMPFILE}
+  srpm_array=$(find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))')
 
   # set outputs
   # built_rpm_array:
