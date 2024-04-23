@@ -72,11 +72,13 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   ls -lR $(rpm --eval "%_rpmdir")
   echo "# List expected RPMs"
   rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
+  rpm_array=$(rpmspec --query --rpms ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | sed 's#^#output/#' | jq -R -s -c 'split("\n") | map(select(length>0))')
 
   echo "# List output SRPM"
   ls -lR $(rpm --eval "%_srcrpmdir")
   echo "# List expected SRPM"
   rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
+  srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | sed 's#^#output/#' | jq -R -s -c 'split("\n") | map(select(length>0))')
 
   # If all is good so far, create output directory
   if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
@@ -87,14 +89,12 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   rsync --archive --verbose $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
 
   # set outputs
-  # source_rpm_path:
-  #  description: 'path to Source RPM file'
-  # source_rpm_dir_path:
-  #  description: 'path to SRPMS directory'
-  # source_rpm_name:
-  #  description: 'name of Source RPM file'
-  # rpm_dir_path:
-  #  description: 'path to RPMS directory'
+  # built_rpm_array:
+  #  description: 'JSON array of built RPM files'
+  echo "built_rpm_array=${rpm_array}" >>"$GITHUB_OUTPUT"
+  # built_srpm_array:
+  #  description: 'JSON array of SRPM'
+  echo "built_srpm_array=${srpm_array}" >>"$GITHUB_OUTPUT"
   
   # description: 'Content-type for Upload'
   echo "rpm_content_type=application/x-rpm" >>"$GITHUB_OUTPUT"
