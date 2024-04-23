@@ -18,14 +18,10 @@ inputs:
 
 # Define your outputs here.
 outputs:
-  source_rpm_path:
-    description: 'path to Source RPM file'
-  source_rpm_dir_path:
-    description: 'path to SRPMS directory'
-  source_rpm_name:
-    description: 'name of Source RPM file'
-  rpm_dir_path:
-    description: 'path to RPMS directory'
+  built_rpm_array:
+    description: 'JSON array of built RPM files'
+  built_srpm_array:
+    description: 'JSON array of SRPM'
   rpm_content_type:
     description: 'Content-type for Upload'
   time:
