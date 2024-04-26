@@ -2,19 +2,14 @@
 
 if [ -f /etc/os-release ] ; then
   . /etc/os-release
+  echo "::notice file=entrypoint.sh,line=6::${PRETTY_NAME}"
 fi
 
-echo "# List env vars"
-env | sort
-echo
-
-echo "# List recursively /usr/src"
-ls -lhR /usr/src
-echo
-
-echo "# List GITHUB_WORKSPACE: ${GITHUB_WORKSPACE}"
-ls -lhR ${GITHUB_WORKSPACE}
-echo
+if [ -n "${PRETTY_NAME}" ] ; then
+  echo "# List env vars"
+  env | sort
+  echo
+fi
 
 echo "# user home directory ~/.rpmmacros"
 if [ ! -f ~/.rpmmacros ] ; then
@@ -65,8 +60,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "# Using yum-builddep from yum-utils to install all the build dependencies for a package"
   yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
+  # consider input parameters that control '-v', '-vv', and '--define "debug_package %{nil}"' independently
   echo "# Build RPM"
-  rpmbuild -ba -v ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  rpmbuild -ba --define "debug_package %{nil}" -v ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
   echo "# List output RPMs"
   ls -lR $(rpm --eval "%_rpmdir")
