@@ -82,7 +82,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
     echo "::notice file=entrypoint.sh,line=84::Mitigating rpmspec bug"
-    rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+    rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src\n" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
     ##
   fi
@@ -100,14 +100,15 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}' > ${TMPFILE}
   echo "# finding files"
   find output -type f
-  echo "## find files matching the following"
+  echo "## rpm  - find files matching the following"
   cat ${TMPFILE}
   echo "# make rpm_array"
   find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))'
   rpm_array=$(find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))')
+  cp /dev/null ${TMPFILE}
   echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1}'
   echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1}' > ${TMPFILE}
-  echo "## find files matching the following"
+  echo "## srpm - find files matching the following"
   cat ${TMPFILE}
   echo "# make srpm_array"
   find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))'
