@@ -78,6 +78,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
+    echo "::notice file=entrypoint.sh,line=81::Mitigating rpmspec bug"
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
     ##
@@ -125,7 +126,7 @@ fi
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=125::$GREETING"
+echo "::notice file=entrypoint.sh,line=129::$GREETING"
 
 # Write outputs to the $GITHUB_OUTPUT file
 echo "greeting=$GREETING" >>"$GITHUB_OUTPUT"
