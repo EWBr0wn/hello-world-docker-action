@@ -72,13 +72,16 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   echo "# List output SRPM"
   ls -lR $(rpm --eval "%_srcrpmdir")
+  echo "## debug rpmspec"
+  tmpstring=$(rpmspec --query --srpm --queryformat="%{arch}" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME})
+  echo "##               - ${tmpstring}"
   echo "# List expected SRPM"
-  if [ "$(rpmspec --query --srpm --queryformat="%{arch}" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME})" = "src" ] ; then
+  if [ "${tmpstring}" = "src" ] ; then
     rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
     tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
-    echo "::notice file=entrypoint.sh,line=81::Mitigating rpmspec bug"
+    echo "::notice file=entrypoint.sh,line=84::Mitigating rpmspec bug"
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
     ##
