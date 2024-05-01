@@ -96,7 +96,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     mkdir -v ${GITHUB_WORKSPACE}/output
   fi
 
-  # Copy output RPMs
+  # Copy output RPMs and if external variable set, copy all files in %_sourcedir as well
   rsync --archive --verbose $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
   # make temp file
   TMPFILE=$(mktemp -q /tmp/.filearray-egrep.XXXXXX)
