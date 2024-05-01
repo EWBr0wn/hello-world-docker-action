@@ -118,26 +118,25 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   # set outputs
   # built_rpm_array:
   #  description: 'JSON array of built RPM files'
-  echo "built_rpm_array=${rpm_array}" >> $GITHUB_OUTPUT
+  echo "built_rpm_array=${rpm_array}" >> "$GITHUB_OUTPUT"
   # built_srpm_array:
   #  description: 'JSON array of SRPM'
-  echo "built_srpm_array=${srpm_array}" >> $GITHUB_OUTPUT
+  echo "built_srpm_array=${srpm_array}" >> "$GITHUB_OUTPUT"
   
   # description: 'Content-type for Upload'
-  echo "rpm_content_type=application/x-rpm" >> $GITHUB_OUTPUT
+  echo "rpm_content_type=application/x-rpm" >> "$GITHUB_OUTPUT"
 fi
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=137::$GREETING"
+echo "::notice file=entrypoint.sh,line=134::$GREETING"
 
-# Write outputs to the $GITHUB_OUTPUT file
-## echo "greeting=$GREETING" >> $GITHUB_OUTPUT
+# Write outputs to the "$GITHUB_OUTPUT" file
+## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
 ## Using tee gleaned from the following:
 ## https://github.com/FirelightFlagboy/action-gh-release-test/blob/da8751c8d19233021a65a59c448ca26d344b5a89/.github/workflows/release-test.yml#L30
-echo "greeting=$GREETING" | tee -a $GITHUB_OUTPUT
-
+echo "greeting=$GREETING" | tee -a "$GITHUB_OUTPUT"
 
 exit 0
