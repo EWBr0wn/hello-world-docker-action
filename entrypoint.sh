@@ -2,21 +2,21 @@
 
 if [ -f /etc/os-release ] ; then
   . /etc/os-release
-  echo "::notice file=entrypoint.sh,line=6::${PRETTY_NAME}"
+  echo "::notice file=entrypoint.sh,line=5::${PRETTY_NAME}"
 fi
 
 if [ -n "${PRETTY_NAME}" ] ; then
-  echo "# List env vars"
+  echo "::group::List env vars"
   env | sort
-  echo
+  echo "::endgroup::"
 fi
 
-echo "# user home directory ~/.rpmmacros"
+echo "::group::user home directory ~/.rpmmacros"
 if [ ! -f ~/.rpmmacros ] ; then
   echo '%_topdir /usr/src/rpmbuild' > ~/.rpmmacros
 fi
 cat ~/.rpmmacros
-echo
+echo "::endgroup::"
 
 echo "INPUT_SPEC_FILE: ${INPUT_SPEC_FILE}"
 if [ -n "${INPUT_SPEC_FILE}" ] ; then
@@ -100,8 +100,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   rsync --archive --verbose $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
   # make temp file
   TMPFILE=$(mktemp -q /tmp/.filearray-egrep.XXXXXX)
-  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}'
-  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}' > ${TMPFILE}
+  echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}' | tee ${TMPFILE}
   echo "# finding files"
   find output -type f
   echo "## rpm  - find files matching the following"
@@ -109,9 +108,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "# make rpm_array"
   find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))'
   rpm_array=$(find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))')
-  cp /dev/null ${TMPFILE}
-  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1}'
-  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1}' > ${TMPFILE}
+  echo ${tmp_srpm_array} | jq -r .[] | awk '{print "/" $1}' | tee ${TMPFILE}
   echo "## srpm - find files matching the following"
   cat ${TMPFILE}
   echo "# make srpm_array"
@@ -121,22 +118,26 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   # set outputs
   # built_rpm_array:
   #  description: 'JSON array of built RPM files'
-  echo "built_rpm_array=${rpm_array}" >>"$GITHUB_OUTPUT"
+  echo "built_rpm_array=${rpm_array}" >> $GITHUB_OUTPUT
   # built_srpm_array:
   #  description: 'JSON array of SRPM'
-  echo "built_srpm_array=${srpm_array}" >>"$GITHUB_OUTPUT"
+  echo "built_srpm_array=${srpm_array}" >> $GITHUB_OUTPUT
   
   # description: 'Content-type for Upload'
-  echo "rpm_content_type=application/x-rpm" >>"$GITHUB_OUTPUT"
+  echo "rpm_content_type=application/x-rpm" >> $GITHUB_OUTPUT
 fi
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=129::$GREETING"
+echo "::notice file=entrypoint.sh,line=137::$GREETING"
 
 # Write outputs to the $GITHUB_OUTPUT file
-echo "greeting=$GREETING" >>"$GITHUB_OUTPUT"
+## echo "greeting=$GREETING" >> $GITHUB_OUTPUT
+## Using tee gleaned from the following:
+## https://github.com/FirelightFlagboy/action-gh-release-test/blob/da8751c8d19233021a65a59c448ca26d344b5a89/.github/workflows/release-test.yml#L30
+echo "greeting=$GREETING" | tee -a $GITHUB_OUTPUT
+
 
 exit 0
