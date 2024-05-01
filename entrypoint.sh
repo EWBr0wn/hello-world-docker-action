@@ -35,12 +35,13 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     done
   fi
 
-  #echo "# rpmlint the SPEC_FILE:"
-  #rpmlint ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
-  #retval=$?
-  #if [ ${retval} -gt 0 ] ; then
+  echo "# rpmlint the SPEC_FILE: ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}"
+  rpmlint --verbose ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  retval=$?
+  if [ ${retval} -gt 0 ] ; then
+    echo "## retval=${retval} from rpmlint"
   #  exit ${retval}
-  #fi
+  fi
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) sources: ${INPUT_SPEC_FILE}"
   spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
@@ -56,6 +57,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   echo "# Fetch Source and Patches files from URLs"
   spectool --get-files --sourcedir ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+
+  echo "## List files in SOURCES directory"
+  ls -l ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/
 
   echo "# Using yum-builddep from yum-utils to install all the build dependencies for a package"
   yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
