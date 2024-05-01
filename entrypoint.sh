@@ -59,7 +59,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   spectool --get-files --sourcedir ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
   echo "## List files in SOURCES directory"
-  ls -l ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/
+  ls -l ${RPMBUILDSOURCEDIR}
 
   echo "# Using yum-builddep from yum-utils to install all the build dependencies for a package"
   yum-builddep -y ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
