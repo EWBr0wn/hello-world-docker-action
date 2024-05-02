@@ -11,6 +11,22 @@ inputs:
   additional_repos:
     description: 'JSON array of additional repositories to enable'
     required: false
+  output_dl_artifacts:
+    description: 'Add any downloaded artifacts to artifact_array'
+    required: true
+    default: false
+  verbose:
+    description: 'Mark verbose option for commands run inside action'
+    required: true
+    default: false
+  rpm_debug_package:
+    description: 'Produce debug_package RPMs'
+    required: true
+    default: true
+  rpm_debugsource_template:
+    description: 'Produce _debugsource_template RPMs'
+    required: true
+    default: true
   who-to-greet:
     description: Who to greet
     required: true
@@ -24,6 +40,8 @@ outputs:
     description: 'JSON array of SRPM'
   rpm_content_type:
     description: 'Content-type for Upload'
+  artifact_array:
+    description: 'JSON array of artifacts with details'
   time:
     description: The time we greeted you
 
