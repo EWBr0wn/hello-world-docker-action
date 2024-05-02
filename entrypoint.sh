@@ -12,6 +12,36 @@ if [ -n "${PRETTY_NAME}" ] ; then
 fi
 
 # Parameterize Verbose, debug_package, and _debugsource_template
+#INPUT_SPEC_FILE=contrib/**/*.spec
+if [ "${INPUT_VERBOSE}" = 'false' ] || [ -z "${INPUT_VERBOSE}" ] ; then
+  # default 'INPUT_VERBOSE=false'
+  LONG_VERBOSE=''
+  SHORT_VERBOSE=''
+else
+  LONG_VERBOSE='--verbose'
+  SHORT_VERBOSE='-v'
+fi
+## Check if input variable set for more detailed JSON return set
+if [ "${INPUT_OUTPUT_DL_ARTIFACTS}" = 'false' ] || [ -z "${INPUT_OUTPUT_DL_ARTIFACTS}" ] ; then
+  # default INPUT_OUTPUT_DL_ARTIFACTS=false
+  BIGOUTPUT='false'
+else
+  BIGOUTPUT='true'
+  SHORT_A="-v"
+fi
+if [ "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" ] ; then
+  # default INPUT_RPM_DEBUGSOURCE_TEMPLATE=true
+  LONG_B=''
+else
+  LONG_B='--define "_debugsource_template %{nil}"'
+fi
+if [ "${INPUT_RPM_DEBUG_PACKAGE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUG_PACKAGE}" ] ; then
+  # default 'INPUT_RPM_DEBUG_PACKAGE=true'
+  LONG_C=''
+else
+  LONG_C='--define "debug_package %{nil}"'
+fi
+
 echo "::group::user home directory ~/.rpmmacros"
 if [ ! -f ~/.rpmmacros ] ; then
   echo '%_topdir /usr/src/rpmbuild' > ~/.rpmmacros
@@ -20,6 +50,13 @@ cat ~/.rpmmacros
 echo "::endgroup::"
 
 echo "INPUT_SPEC_FILE: ${INPUT_SPEC_FILE}"
+if [ -z "${INPUT_SPEC_FILE}" ] ; then
+  # no input provided, so set to default
+  ## cd to the base of the git checkout, then search for files matching '*.spec'
+  ##   output into JSON array to make things easier
+  INPUT_SPEC_FILE=$(find . -name "*.spec" | head -1 | sed 's#./##')
+fi
+
 RPMBUILDSPECSDIR=$(rpm --eval "%_specdir")
 RPMBUILDSOURCEDIR=$(rpm --eval "%_sourcedir")
 # if the INPUT_SPEC_FILE variable is empty, then 
@@ -28,7 +65,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   REPO_SPEC_DIR=$(dirname ${INPUT_SPEC_FILE})
   REPO_SPEC_FILENAME=$(basename ${INPUT_SPEC_FILE})
 
-  cp --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} ${RPMBUILDSPECSDIR}/
+  cp --archive ${LONG_VERBOSE} ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} ${RPMBUILDSPECSDIR}/
 
   if [ -n "${ADDITIONAL_REPOS}" ] ; then
     echo "${ADDITIONAL_REPOS}" | jq -r .[]
@@ -40,7 +77,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   fi
 
   echo "# rpmlint the SPEC_FILE: ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}"
-  rpmlint --verbose ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  rpmlint ${LONG_VERBOSE} ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   retval=$?
   if [ ${retval} -gt 0 ] ; then
     echo "## retval=${retval} from rpmlint"
@@ -53,14 +90,14 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   # Make list of files that will be copied
   for f in $(spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    cp --archive --verbose ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
+    cp --archive ${LONG_VERBOSE} ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
   done
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) patches: ${INPUT_SPEC_FILE}"
   spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   # Make list of patches that will be copied
   for p in $(spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
-    cp --archive --verbose ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
+    cp --archive ${LONG_VERBOSE} ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
   done
 
   echo "# Fetch Source and Patches files from URLs"
@@ -74,7 +111,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # consider input parameters that control '-v', '-vv', and '--define "debug_package %{nil}"' independently
   echo "# Build RPM"
-  rpmbuild -ba --define "debug_package %{nil}" -v ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  rpmbuild -ba --define "debug_package %{nil}" ${SHORT_VERBOSE} ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+
+  # Command to get Name-Version-Release string from SPEC file
+  ## $ rpmspec --define "dist %{nil}" --define "debug_package %{nil}" --define "_debugsource_template %{nil}" --query --queryformat="%{nvr}" ${SPEC}
 
   echo "# List output RPMs"
   ls -lR $(rpm --eval "%_rpmdir")
@@ -93,7 +133,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
-    echo "::notice file=entrypoint.sh,line=88::Mitigating rpmspec bug"
+    echo "::notice file=entrypoint.sh,line=136::Mitigating rpmspec bug"
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src\n" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array=$(rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
     ##
@@ -101,11 +141,11 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # If all is good so far, create output directory
   if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
-    mkdir -v ${GITHUB_WORKSPACE}/output
+    mkdir ${LONG_VERBOSE} ${GITHUB_WORKSPACE}/output
   fi
 
   # Copy output RPMs and if external variable set, copy all files in %_sourcedir as well
-  rsync --archive --verbose $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
+  rsync --archive ${LONG_VERBOSE} $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
   # make temp file
   TMPFILE=$(mktemp -q /tmp/.filearray-egrep.XXXXXX)
   echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}' | tee ${TMPFILE}
@@ -139,7 +179,7 @@ fi
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=134::$GREETING"
+echo "::notice file=entrypoint.sh,line=182::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
