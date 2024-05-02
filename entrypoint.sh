@@ -11,6 +11,7 @@ if [ -n "${PRETTY_NAME}" ] ; then
   echo "::endgroup::"
 fi
 
+# Parameterize Verbose, debug_package, and _debugsource_template
 echo "::group::user home directory ~/.rpmmacros"
 if [ ! -f ~/.rpmmacros ] ; then
   echo '%_topdir /usr/src/rpmbuild' > ~/.rpmmacros
@@ -19,11 +20,14 @@ cat ~/.rpmmacros
 echo "::endgroup::"
 
 echo "INPUT_SPEC_FILE: ${INPUT_SPEC_FILE}"
+RPMBUILDSPECSDIR=$(rpm --eval "%_specdir")
+RPMBUILDSOURCEDIR=$(rpm --eval "%_sourcedir")
+# if the INPUT_SPEC_FILE variable is empty, then 
+#   search the checked out directory structure to find *.spec
 if [ -n "${INPUT_SPEC_FILE}" ] ; then
   REPO_SPEC_DIR=$(dirname ${INPUT_SPEC_FILE})
   REPO_SPEC_FILENAME=$(basename ${INPUT_SPEC_FILE})
-  RPMBUILDSPECSDIR=$(rpm --eval "%_specdir")
-  RPMBUILDSOURCEDIR=$(rpm --eval "%_sourcedir")
+
   cp --archive --verbose ${GITHUB_WORKSPACE}/${INPUT_SPEC_FILE} ${RPMBUILDSPECSDIR}/
 
   if [ -n "${ADDITIONAL_REPOS}" ] ; then
@@ -43,14 +47,18 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   #  exit ${retval}
   fi
 
+  ## Check to see if input variable set for more detailed JSON return set
+  
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) sources: ${INPUT_SPEC_FILE}"
   spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  # Make list of files that will be copied
   for f in $(spectool --sources ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
     cp --archive --verbose ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${f} ${RPMBUILDSOURCEDIR}/
   done
 
   echo "# List SPEC_FILE (${REPO_SPEC_FILENAME}) patches: ${INPUT_SPEC_FILE}"
   spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  # Make list of patches that will be copied
   for p in $(spectool --patches ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | egrep -v 'http[s]*://|ftp://' | awk '{print $2}') ; do
     cp --archive --verbose ${GITHUB_WORKSPACE}/${REPO_SPEC_DIR}/../SOURCES/${p} ${RPMBUILDSOURCEDIR}/
   done
@@ -85,11 +93,11 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
-    echo "::notice file=entrypoint.sh,line=84::Mitigating rpmspec bug"
+    echo "::notice file=entrypoint.sh,line=88::Mitigating rpmspec bug"
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src\n" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array=$(rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
     ##
-  fi
+  fi  # end of if from line 27
 
   # If all is good so far, create output directory
   if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
