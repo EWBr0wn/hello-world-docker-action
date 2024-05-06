@@ -102,15 +102,25 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   done
 
   echo "# Fetch Source and Patches files from URLs"
-  SRCLISTBEFORE=$(ls -1 ${RPMBUILDSOURCEDIR} | jq -R '[.]' | jq -s -c 'add')
+  SRCLISTBEFORE="$(ls -1 ${RPMBUILDSOURCEDIR} | jq -R '[.]' | jq -s -c 'add')"
   spectool --get-files --sourcedir ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
   if [ "${INCLUDEDOWNLOADS}" = 'true' ] ; then
-    SRCLISTAFTER=$(ls -1 ${RPMBUILDSOURCEDIR} | jq -R '[.]' | jq -s -c 'add')
+    SRCLISTAFTER="$(ls -1 ${RPMBUILDSOURCEDIR} | jq -R '[.]' | jq -s -c 'add')"
   else
-    SRCLISTAFTER=${SRCLISTBEFORE}
+    SRCLISTAFTER="${SRCLISTBEFORE}"
   fi
   # take every file from SRCLISTBEFORE out of SRCLISTAFTER
-  jq --arg fbefore "${SRCLISTBEFORE}" --arg fafter "${SRCLISTAFTER}" '$after - $before'
+  DLSRCLIST="$(jq -n -c --argjson fbefore "${SRCLISTBEFORE}" --argjson fafter "${SRCLISTAFTER}" '$fafter - $fbefore')"
+  # make temp file
+  SRCEXCLUDETMPFILE=$(mktemp -q /tmp/.source-rsync-exclude.XXXXXX)
+  jq -n -c --argjson fbefore "${SRCLISTBEFORE}" --argjson fafter "${SRCLISTAFTER}" '$fbefore - ($fafter - $fbefore)' | \
+    jq -r '.[]' | \
+    sed 's#^#SOURCES/#' | tee ${SRCEXCLUDETMPFILE}
+  if [ "${INCLUDEDOWNLOADS}" = 'true' ] ; then
+    RSYNC_DL_SRC_ADDON="--exclude-from=${SRCEXCLUDETMPFILE} ${RPMBUILDSOURCEDIR}"
+  else
+    RSYNC_DL_SRC_ADDON=''
+  fi
 
   echo "## List files in SOURCES directory"
   ls -l ${RPMBUILDSOURCEDIR}
@@ -139,12 +149,12 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "# List expected SRPM"
   if [ "${tmpstring}" = "src" ] ; then
     rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))'
-    tmp_srpm_array=$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
+    tmp_srpm_array="$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')"
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
     echo "::notice file=entrypoint.sh,line=136::Mitigating rpmspec bug"
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src\n" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
-    tmp_srpm_array=$(rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
+    tmp_srpm_array="$(rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')"
     ##
   fi
 
@@ -154,7 +164,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   fi
 
   # Copy output RPMs and if external variable set, copy all files in %_sourcedir as well
-  rsync --archive ${LONG_VERBOSE} $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
+  rsync --archive ${LONG_VERBOSE} ${RSYNC_DL_SRC_ADDON} $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
   # make temp file
   TMPFILE=$(mktemp -q /tmp/.filearray-egrep.XXXXXX)
   echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}' | tee ${TMPFILE}
@@ -183,6 +193,8 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   # description: 'Content-type for Upload'
   echo "rpm_content_type=application/x-rpm" >> "$GITHUB_OUTPUT"
 
+  # build out the output_array and include ${DLSRCLIST} if set
+  ## for each file in ${DLSRCLIST} construct JSON of filename, fullpath, size, MD5, SHA256, modification time, etc.
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
@@ -190,7 +202,7 @@ fi  # end of if from line 64
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=193::$GREETING"
+echo "::notice file=entrypoint.sh,line=204::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
