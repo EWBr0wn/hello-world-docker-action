@@ -24,22 +24,23 @@ fi
 ## Check if input variable set for more detailed JSON return set
 if [ "${INPUT_OUTPUT_DL_ARTIFACTS}" = 'false' ] || [ -z "${INPUT_OUTPUT_DL_ARTIFACTS}" ] ; then
   # default INPUT_OUTPUT_DL_ARTIFACTS=false
-  BIGOUTPUT='false'
+  ## description: 'Add any downloaded artifacts to artifact_array'
+  INCLUDEDOWNLOADS='false'
 else
-  BIGOUTPUT='true'
-  SHORT_A="-v"
+  INCLUDEDOWNLOADS='true'
 fi
+output_array='[]'
 if [ "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" ] ; then
   # default INPUT_RPM_DEBUGSOURCE_TEMPLATE=true
-  LONG_B=''
+  LONG_RPM_DS_T=''
 else
-  LONG_B='--define "_debugsource_template %{nil}"'
+  LONG_RPM_DS_T='--define "_debugsource_template %{nil}"'
 fi
 if [ "${INPUT_RPM_DEBUG_PACKAGE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUG_PACKAGE}" ] ; then
   # default 'INPUT_RPM_DEBUG_PACKAGE=true'
-  LONG_C=''
+  LONG_RPM_DEBUG_PACKAGE=''
 else
-  LONG_C='--define "debug_package %{nil}"'
+  LONG_RPM_DEBUG_PACKAGE='--define "debug_package %{nil}"'
 fi
 
 echo "::group::user home directory ~/.rpmmacros"
@@ -54,7 +55,7 @@ if [ -z "${INPUT_SPEC_FILE}" ] ; then
   # no input provided, so set to default
   ## cd to the base of the git checkout, then search for files matching '*.spec'
   ##   output into JSON array to make things easier
-  INPUT_SPEC_FILE=$(find . -name "*.spec" | head -1 | sed 's#./##')
+  INPUT_SPEC_FILE=$(cd ${GITHUB_WORKSPACE} ; find . -name "*.spec" | head -1 | sed 's#./##')
 fi
 
 RPMBUILDSPECSDIR=$(rpm --eval "%_specdir")
@@ -101,7 +102,15 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   done
 
   echo "# Fetch Source and Patches files from URLs"
+  SRCLISTBEFORE=$(ls -1 ${RPMBUILDSOURCEDIR} | jq -R '[.]' | jq -s -c 'add')
   spectool --get-files --sourcedir ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  if [ "${INCLUDEDOWNLOADS}" = 'true' ] ; then
+    SRCLISTAFTER=$(ls -1 ${RPMBUILDSOURCEDIR} | jq -R '[.]' | jq -s -c 'add')
+  else
+    SRCLISTAFTER=${SRCLISTBEFORE}
+  fi
+  # take every file from SRCLISTBEFORE out of SRCLISTAFTER
+  jq --arg fbefore "${SRCLISTBEFORE}" --arg fafter "${SRCLISTAFTER}" '$after - $before'
 
   echo "## List files in SOURCES directory"
   ls -l ${RPMBUILDSOURCEDIR}
@@ -111,10 +120,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # consider input parameters that control '-v', '-vv', and '--define "debug_package %{nil}"' independently
   echo "# Build RPM"
-  rpmbuild -ba --define "debug_package %{nil}" ${SHORT_VERBOSE} ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  rpmbuild -ba ${LONG_RPM_DS_T} ${LONG_RPM_DEBUG_PACKAGE} ${SHORT_VERBOSE} ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
 
   # Command to get Name-Version-Release string from SPEC file
-  ## $ rpmspec --define "dist %{nil}" --define "debug_package %{nil}" --define "_debugsource_template %{nil}" --query --queryformat="%{nvr}" ${SPEC}
+  ## $ rpmspec --define "dist %{nil}" ${LONG_RPM_DEBUG_PACKAGE} ${LONG_RPM_DS_T} --query --queryformat="%{nvr}" ${SPEC}
 
   echo "# List output RPMs"
   ls -lR $(rpm --eval "%_rpmdir")
@@ -137,7 +146,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src\n" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array=$(rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')
     ##
-  fi  # end of if from line 27
+  fi
 
   # If all is good so far, create output directory
   if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
@@ -173,13 +182,15 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   
   # description: 'Content-type for Upload'
   echo "rpm_content_type=application/x-rpm" >> "$GITHUB_OUTPUT"
-fi
+
+  echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
+fi  # end of if from line 64
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=182::$GREETING"
+echo "::notice file=entrypoint.sh,line=193::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
