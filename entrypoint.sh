@@ -1,5 +1,5 @@
 #!/bin/sh -l
-
+set -x
 if [ -f /etc/os-release ] ; then
   . /etc/os-release
   echo "::notice file=entrypoint.sh,line=5::${PRETTY_NAME}"
