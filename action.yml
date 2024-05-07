@@ -27,10 +27,10 @@ inputs:
     description: 'Produce _debugsource_template RPMs'
     required: true
     default: true
-  who-to-greet:
-    description: Who to greet
+  who_to_greet:
+    description: 'Who to greet'
     required: true
-    default: World
+    default: 'World'
 
 # Define your outputs here.
 outputs:
