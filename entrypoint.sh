@@ -215,7 +215,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
                     '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
       jq -c --arg t "x86_64" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}'
-  fi
+  done
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
