@@ -200,6 +200,22 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # build out the output_array and include ${DLSRCLIST} if set
   ## for each file in ${DLSRCLIST} construct JSON of filename, fullpath, size, MD5, SHA256, modification time, etc.
+  for f in $(echo ${rpm_array} | jq -r '.[]') ; do
+    rpm -qpi ${f}
+    tj=$(stat --printf='{"FullPath":"%n","Size":%s,"ModifiedSSE":%Y}\n' ${f} | jq -c .)
+    #n=$(basename ${f})
+    sse=$(echo ${tj} | jq '.ModifiedSSE')
+    #m=$(md5sum ${f} | awk '{print $1}')
+    #s=$(sha256sum ${f} | awk '{print $1}')
+    #d=$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')
+    echo ${tj} | jq \
+                    --arg n "$(basename ${f})" \
+                    --arg d "$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')" \
+                    --arg m "$(md5sum ${f} | awk '{print $1}')" \
+                    --arg s "$(sha256sum ${f} | awk '{print $1}')" \
+                    '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
+      jq -c --arg t "x86_64" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}'
+  fi
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
