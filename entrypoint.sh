@@ -131,6 +131,11 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   # consider input parameters that control '-v', '-vv', and '--define "debug_package %{nil}"' independently
   echo "# Build RPM"
   rpmbuild -ba ${LONG_RPM_DS_T} ${LONG_RPM_DEBUG_PACKAGE} ${SHORT_VERBOSE} ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
+  retval=$?
+  if [ ${retval} -gt 0 ] ; then
+    echo "## retval=${retval} from rpmbuild"
+  #  exit ${retval}
+  fi
 
   # Command to get Name-Version-Release string from SPEC file
   ## $ rpmspec --define "dist %{nil}" ${LONG_RPM_DEBUG_PACKAGE} ${LONG_RPM_DS_T} --query --queryformat="%{nvr}" ${SPEC}
