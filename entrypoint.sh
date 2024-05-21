@@ -218,7 +218,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
                     '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
       jq -c --arg t "$(rpm -q --queryformat="%{arch}" ${f})" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
-      jq -c '{"Name", "FullPath", "ModifiedSSE", "Type": $t}' | \
+      jq -c '{"Name", "FullPath", "ModifiedSSE", "Type"}' | \
       tee -a ${JSONFILELIST}
   done
   for f in $(echo ${srpm_array} | jq -r '.[]') ; do
@@ -232,7 +232,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
                     '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
       jq -c --arg t "srpm" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
-      jq -c '{"Name", "FullPath", "ModifiedSSE", "Type": $t}' | \
+      jq -c '{"Name", "FullPath", "ModifiedSSE", "Type"}' | \
       tee -a ${JSONFILELIST}
   done
   if [ "${INCLUDEDOWNLOADS}" = "true" ] ; then
@@ -246,7 +246,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                       --arg s "$(sha256sum ${f} | awk '{print $1}')" \
                       '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
         jq -c --arg t "dlsrc" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
-        jq -c '{"Name", "FullPath", "ModifiedSSE", "Type": $t}' | \
+        jq -c '{"Name", "FullPath", "ModifiedSSE", "Type"}' | \
         tee -a ${JSONFILELIST}
     done
   fi
