@@ -139,6 +139,8 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # Command to get Name-Version-Release string from SPEC file
   ## $ rpmspec --define "dist %{nil}" ${LONG_RPM_DEBUG_PACKAGE} ${LONG_RPM_DS_T} --query --queryformat="%{nvr}" ${SPEC}
+  nvr=$(rpmspec --define "dist %{nil}" --query --queryformat="%{nvr}" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME})
+  dist=$(rpm --eval "%dist" | sed 's#\.##')
 
   echo "# List output RPMs"
   ls -lR $(rpm --eval "%_rpmdir")
@@ -214,7 +216,19 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg m "$(md5sum ${f} | awk '{print $1}')" \
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
                     '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
-      jq -c --arg t "x86_64" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}'
+      jq -c --arg t "$(rpm -q --queryformat="%{arch}" ${f})" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}'
+  done
+  for f in $(echo ${srpm_array} | jq -r '.[]') ; do
+    rpm -qpi ${f}
+    tj=$(stat --printf='{"FullPath":"%n","Size":%s,"ModifiedSSE":%Y}\n' ${f} | jq -c .)
+    sse=$(echo ${tj} | jq '.ModifiedSSE')
+    echo ${tj} | jq \
+                    --arg n "$(basename ${f})" \
+                    --arg d "$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')" \
+                    --arg m "$(md5sum ${f} | awk '{print $1}')" \
+                    --arg s "$(sha256sum ${f} | awk '{print $1}')" \
+                    '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
+      jq -c --arg t "$(rpm -q --queryformat="%{arch}" ${f})" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}'
   done
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
