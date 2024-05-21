@@ -233,7 +233,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
       jq -c --arg t "srpm" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
       tee -a ${JSONFILELIST}
   done
-  cat ${JSONFILELIST} | jq -c --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":[.]}]}]
+  cat ${JSONFILELIST} | jq -c --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":[.]}]}]'
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
