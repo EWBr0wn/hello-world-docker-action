@@ -251,9 +251,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   ls -l ${JSONFILELIST}
   cat ${JSONFILELIST} | nl
   echo "::endgroup::"
-  cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":.}]}]' | nl
-  output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":.}]}]')
-  echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
+  JSONOUTPUTARRAY=$(mktemp -q /tmp/.Artifact-array.XXXXXX)
+  cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
+  #output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]')
+  echo "artifact_array=$(cat ${JSONOUTPUTARRAY})" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
