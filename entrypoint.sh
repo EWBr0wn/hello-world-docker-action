@@ -202,6 +202,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # build out the output_array and include ${DLSRCLIST} if set
   ## for each file in ${DLSRCLIST} construct JSON of filename, fullpath, size, MD5, SHA256, modification time, etc.
+  JSONFILELIST=$(mktemp -q /tmp/.Artifacts-list.XXXXXX)
   for f in $(echo ${rpm_array} | jq -r '.[]') ; do
     rpm -qpi ${f}
     tj=$(stat --printf='{"FullPath":"%n","Size":%s,"ModifiedSSE":%Y}\n' ${f} | jq -c .)
@@ -216,7 +217,8 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg m "$(md5sum ${f} | awk '{print $1}')" \
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
                     '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
-      jq -c --arg t "$(rpm -q --queryformat="%{arch}" ${f})" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}'
+      jq -c --arg t "$(rpm -q --queryformat="%{arch}" ${f})" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
+      tee -a ${JSONFILELIST}
   done
   for f in $(echo ${srpm_array} | jq -r '.[]') ; do
     rpm -qpi ${f}
@@ -228,8 +230,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg m "$(md5sum ${f} | awk '{print $1}')" \
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
                     '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
-      jq -c --arg t "$(rpm -q --queryformat="%{arch}" ${f})" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}'
+      jq -c --arg t "srpm" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
+      tee -a ${JSONFILELIST}
   done
+  cat ${JSONFILELIST} | jq -c --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":[.]}]}]
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
@@ -237,7 +241,7 @@ fi  # end of if from line 64
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=204::$GREETING"
+echo "::notice file=entrypoint.sh,line=244::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
