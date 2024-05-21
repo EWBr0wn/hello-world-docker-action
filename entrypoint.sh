@@ -188,6 +188,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "# make srpm_array"
   find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))'
   srpm_array=$(find output -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))')
+  echo "# make src_array"
+  echo ${DLSRCLIST} | jq -r .[] | awk '{print "/" $1}' | tee ${TMPFILE}
+  find output/SOURCES -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))'
+  src_array=$(find output/SOURCES -type f | egrep -f ${TMPFILE} | jq -R -s -c 'split("\n") | map(select(length>0))')
 
   # set outputs
   # built_rpm_array:
@@ -206,11 +210,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   for f in $(echo ${rpm_array} | jq -r '.[]') ; do
     rpm -qpi ${f}
     tj=$(stat --printf='{"FullPath":"%n","Size":%s,"ModifiedSSE":%Y}\n' ${f} | jq -c .)
-    #n=$(basename ${f})
     sse=$(echo ${tj} | jq '.ModifiedSSE')
-    #m=$(md5sum ${f} | awk '{print $1}')
-    #s=$(sha256sum ${f} | awk '{print $1}')
-    #d=$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')
     echo ${tj} | jq \
                     --arg n "$(basename ${f})" \
                     --arg d "$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')" \
@@ -233,10 +233,25 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
       jq -c --arg t "srpm" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
       tee -a ${JSONFILELIST}
   done
+  if [ "${INCLUDEDOWNLOADS}" = "true" ] ; then
+    for f in $(echo ${src_array} | jq -r '.[]') ; do
+      tj=$(stat --printf='{"FullPath":"%n","Size":%s,"ModifiedSSE":%Y}\n' ${f} | jq -c .)
+      sse=$(echo ${tj} | jq '.ModifiedSSE')
+      echo ${tj} | jq \
+                      --arg n "$(basename ${f})" \
+                      --arg d "$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')" \
+                      --arg m "$(md5sum ${f} | awk '{print $1}')" \
+                      --arg s "$(sha256sum ${f} | awk '{print $1}')" \
+                      '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
+        jq -c --arg t "dlsrc" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
+        tee -a ${JSONFILELIST}
+    done
+  fi
   echo "::group::List JSON file list"
   cat ${JSONFILELIST} | nl
   echo "::endgroup::"
-  cat ${JSONFILELIST} | jq -c --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":[.]}]}]'
+  cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":.}]}]'
+  output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":.}]}]')
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
@@ -244,7 +259,7 @@ fi  # end of if from line 64
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=244::$GREETING"
+echo "::notice file=entrypoint.sh,line=260::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
