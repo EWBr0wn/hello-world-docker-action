@@ -248,9 +248,10 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     done
   fi
   echo "::group::List JSON file list"
+  ls -l ${JSONFILELIST}
   cat ${JSONFILELIST} | nl
   echo "::endgroup::"
-  cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":.}]}]'
+  cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":.}]}]' | nl
   output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":.}]}]')
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
