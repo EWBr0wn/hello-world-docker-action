@@ -1,5 +1,5 @@
 #!/bin/sh -l
-set -x
+#set -x
 if [ -f /etc/os-release ] ; then
   . /etc/os-release
   echo "::notice file=entrypoint.sh,line=5::${PRETTY_NAME}"
@@ -207,8 +207,11 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   # build out the output_array and include ${DLSRCLIST} if set
   ## for each file in ${DLSRCLIST} construct JSON of filename, fullpath, size, MD5, SHA256, modification time, etc.
   JSONFILELIST=$(mktemp -q /tmp/.Artifacts-list.XXXXXX)
+  # There appears to be a size limit different from the +1M limit for the return to GitHub actions
+  ## Creating a file in the "output" directory for other steps to have access to the full JSON built
+  JSONOUTPUTFILELIST="${GITHUB_WORKSPACE}/output/full_artifact_array.${dist}.json"
   for f in $(echo ${rpm_array} | jq -r '.[]') ; do
-    rpm -qpi ${f}
+    #rpm -qpi ${f}
     tj=$(stat --printf='{"FullPath":"%n","Size":%s,"ModifiedSSE":%Y}\n' ${f} | jq -c .)
     sse=$(echo ${tj} | jq '.ModifiedSSE')
     echo ${tj} | jq \
@@ -216,8 +219,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg d "$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')" \
                     --arg m "$(md5sum ${f} | awk '{print $1}')" \
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
-                    '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
+                    '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s}' | \
       jq -c --arg t "$(rpm -q --queryformat="%{arch}" ${f})" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
+      tee -a ${JSONOUTPUTFILELIST} | \
       jq -c '{"Name", "FullPath", "ModifiedSSE", "Type"}' | \
       tee -a ${JSONFILELIST}
   done
@@ -230,8 +234,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                     --arg d "$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')" \
                     --arg m "$(md5sum ${f} | awk '{print $1}')" \
                     --arg s "$(sha256sum ${f} | awk '{print $1}')" \
-                    '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
+                    '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s}' | \
       jq -c --arg t "srpm" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
+      tee -a ${JSONOUTPUTFILELIST} | \
       jq -c '{"Name", "FullPath", "ModifiedSSE", "Type"}' | \
       tee -a ${JSONFILELIST}
   done
@@ -244,8 +249,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
                       --arg d "$(date --date="@${sse}" --iso-8601=seconds | tr -d ':-' | sed 's#+0000$#Z#')" \
                       --arg m "$(md5sum ${f} | awk '{print $1}')" \
                       --arg s "$(sha256sum ${f} | awk '{print $1}')" \
-                      '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s }' | \
+                      '. + {"Name": $n, "Modified": $d, "MD5": $m, "SHA256": $s}' | \
         jq -c --arg t "dlsrc" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
+        tee -a ${JSONOUTPUTFILELIST} | \
         jq -c '{"Name", "FullPath", "ModifiedSSE", "Type"}' | \
         tee -a ${JSONFILELIST}
     done
@@ -254,17 +260,19 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   ls -lh ${JSONFILELIST}
   cat ${JSONFILELIST} | nl
   echo "::endgroup::"
+  # put some test here in the future when size limit is better known
   JSONOUTPUTARRAY=$(mktemp -q /tmp/.Artifact-array.XXXXXX)
   cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
   #output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]')
   echo "artifact_array=$(cat ${JSONOUTPUTARRAY})" >> "$GITHUB_OUTPUT"
+  ls -lh $GITHUB_OUTPUT
 fi  # end of if from line 64
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=260::$GREETING"
+echo "::notice file=entrypoint.sh,line=273::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
