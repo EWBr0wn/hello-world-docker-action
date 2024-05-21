@@ -139,7 +139,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # Command to get Name-Version-Release string from SPEC file
   ## $ rpmspec --define "dist %{nil}" ${LONG_RPM_DEBUG_PACKAGE} ${LONG_RPM_DS_T} --query --queryformat="%{nvr}" ${SPEC}
-  nvr=$(rpmspec --define "dist %{nil}" --query --queryformat="%{nvr}" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME})
+  nvr=$(rpmspec --define "dist %{nil}" --query --srpm --queryformat="%{nvr}" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME})
   dist=$(rpm --eval "%dist" | sed 's#\.##')
 
   echo "# List output RPMs"
@@ -233,6 +233,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
       jq -c --arg t "srpm" '{"Name", "FullPath", "Size", "Modified", "ModifiedSSE", "MD5", "SHA256", "Type": $t}' | \
       tee -a ${JSONFILELIST}
   done
+  echo "::group::List JSON file list"
+  cat ${JSONFILELIST} | nl
+  echo "::endgroup::"
   cat ${JSONFILELIST} | jq -c --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts":[.]}]}]'
   echo "artifact_array=${output_array}" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
