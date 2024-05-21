@@ -159,7 +159,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     tmp_srpm_array="$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')"
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
-    echo "::notice file=entrypoint.sh,line=136::Mitigating rpmspec bug"
+    echo "::notice file=entrypoint.sh,line=162::Mitigating rpmspec bug"
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src\n" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array="$(rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')"
     ##
@@ -262,8 +262,9 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   echo "::endgroup::"
   # put some test here in the future when size limit is better known
   JSONOUTPUTARRAY=$(mktemp -q /tmp/.Artifact-array.XXXXXX)
-  cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
+  #cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
   #output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]')
+  cat ${JSONOUTPUTFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
   echo "artifact_array=$(cat ${JSONOUTPUTARRAY})" >> "$GITHUB_OUTPUT"
   ls -lh $GITHUB_OUTPUT
 fi  # end of if from line 64
@@ -272,7 +273,7 @@ fi  # end of if from line 64
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=273::$GREETING"
+echo "::notice file=entrypoint.sh,line=276::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
