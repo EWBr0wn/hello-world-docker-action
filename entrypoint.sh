@@ -40,7 +40,8 @@ if [ "${INPUT_RPM_DEBUG_PACKAGE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUG_PACKAGE}
   # default 'INPUT_RPM_DEBUG_PACKAGE=true'
   LONG_RPM_DEBUG_PACKAGE=''
 else
-  LONG_RPM_DEBUG_PACKAGE='--define "debug_package %{nil}"'
+  #LONG_RPM_DEBUG_PACKAGE='--define "debug_package %{nil}"'
+  LONG_RPM_DEBUG_PACKAGE='--nodebuginfo'
 fi
 
 echo "::group::user home directory ~/.rpmmacros"
@@ -168,6 +169,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   # If all is good so far, create output directory
   if [ ! -d ${GITHUB_WORKSPACE}/output ] ; then
     mkdir ${LONG_VERBOSE} ${GITHUB_WORKSPACE}/output
+    chown ${LONG_VERBOSE} --reference=${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/output
   fi
 
   # Copy output RPMs and if external variable set, copy all files in %_sourcedir as well
