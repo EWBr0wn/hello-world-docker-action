@@ -30,12 +30,21 @@ else
   INCLUDEDOWNLOADS='true'
 fi
 output_array='[]'
+## need to add to inputs
+if [ "${INPUT_DEBUG_RPMS}" = 'true' ] || [ -z "${INPUT_DEBUG_RPMS}" ] ; then
+  # default INPUT_DEBUG_RPMS=true
+  LONG_RPM_DEBUG_PACKAGE=''
+else
+  LONG_RPM_DEBUG_PACKAGE='--nodebuginfo'
+fi
+## need to remove from inputs
 if [ "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" ] ; then
   # default INPUT_RPM_DEBUGSOURCE_TEMPLATE=true
   LONG_RPM_DS_T=''
 else
   LONG_RPM_DS_T='--define "_debugsource_template %{nil}"'
 fi
+## need to remove from inputs
 if [ "${INPUT_RPM_DEBUG_PACKAGE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUG_PACKAGE}" ] ; then
   # default 'INPUT_RPM_DEBUG_PACKAGE=true'
   LONG_RPM_DEBUG_PACKAGE=''
@@ -160,7 +169,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
     tmp_srpm_array="$(rpmspec --query --srpm ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')"
   else
     ## Potential bug in rpmspec where the Source RPM does not have arch=src
-    echo "::notice file=entrypoint.sh,line=162::Mitigating rpmspec bug"
+    echo "::notice file=entrypoint.sh,line=172::Mitigating rpmspec bug"
     rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src\n" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME}
     tmp_srpm_array="$(rpmspec --query --srpm --queryformat="%{name}-%{version}-%{release}.src" ${RPMBUILDSPECSDIR}/${REPO_SPEC_FILENAME} | jq -R -s -c 'split("\n") | map(select(length>0))')"
     ##
@@ -174,6 +183,7 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
 
   # Copy output RPMs and if external variable set, copy all files in %_sourcedir as well
   rsync --archive ${LONG_VERBOSE} ${RSYNC_DL_SRC_ADDON} $(rpm --eval "%_rpmdir") $(rpm --eval "%_srcrpmdir") ${GITHUB_WORKSPACE}/output/
+  chown ${LONG_VERBOSE} --recursive --reference=${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/output/
   # make temp file
   TMPFILE=$(mktemp -q /tmp/.filearray-egrep.XXXXXX)
   echo ${tmp_rpm_array} | jq -r .[] | awk '{print "/" $1}' | tee ${TMPFILE}
@@ -267,15 +277,15 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   #cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
   #output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]')
   cat ${JSONOUTPUTFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
+  # insert test here to see if output array is too large; mitigate if too large
   echo "artifact_array=$(cat ${JSONOUTPUTARRAY})" >> "$GITHUB_OUTPUT"
-  ls -lh $GITHUB_OUTPUT
 fi  # end of if from line 64
 
 # Use INPUT_<INPUT_NAME> to get the value of an input
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=276::$GREETING"
+echo "::notice file=entrypoint.sh,line=288::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
