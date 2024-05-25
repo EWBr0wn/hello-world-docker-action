@@ -30,26 +30,10 @@ else
   INCLUDEDOWNLOADS='true'
 fi
 output_array='[]'
-## need to add to inputs
 if [ "${INPUT_DEBUG_RPMS}" = 'true' ] || [ -z "${INPUT_DEBUG_RPMS}" ] ; then
   # default INPUT_DEBUG_RPMS=true
   LONG_RPM_DEBUG_PACKAGE=''
 else
-  LONG_RPM_DEBUG_PACKAGE='--nodebuginfo'
-fi
-## need to remove from inputs
-if [ "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUGSOURCE_TEMPLATE}" ] ; then
-  # default INPUT_RPM_DEBUGSOURCE_TEMPLATE=true
-  LONG_RPM_DS_T=''
-else
-  LONG_RPM_DS_T='--define "_debugsource_template %{nil}"'
-fi
-## need to remove from inputs
-if [ "${INPUT_RPM_DEBUG_PACKAGE}" = 'true' ] || [ -z "${INPUT_RPM_DEBUG_PACKAGE}" ] ; then
-  # default 'INPUT_RPM_DEBUG_PACKAGE=true'
-  LONG_RPM_DEBUG_PACKAGE=''
-else
-  #LONG_RPM_DEBUG_PACKAGE='--define "debug_package %{nil}"'
   LONG_RPM_DEBUG_PACKAGE='--nodebuginfo'
 fi
 

@@ -19,12 +19,8 @@ inputs:
     description: 'Mark verbose option for commands run inside action'
     required: true
     default: false
-  rpm_debug_package:
-    description: 'Produce debug_package RPMs'
-    required: true
-    default: true
-  rpm_debugsource_template:
-    description: 'Produce _debugsource_template RPMs'
+  debug_rpms:
+    description: 'Produce debug RPMs - debugsource and debuginfo'
     required: true
     default: true
   who_to_greet:
