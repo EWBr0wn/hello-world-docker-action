@@ -4,13 +4,40 @@ author: GitHub Actions
 
 # Define your inputs here.
 inputs:
-  who-to-greet:
-    description: Who to greet
+  spec_file:
+    description: 'Path to the .spec file'
     required: true
-    default: World
+    default: 'contrib/**/*.spec'                     #Any spec file under the contrib folder
+  additional_repos:
+    description: 'JSON array of additional repositories to enable'
+    required: false
+  output_dl_artifacts:
+    description: 'Add any downloaded artifacts to artifact_array'
+    required: true
+    default: false
+  verbose:
+    description: 'Mark verbose option for commands run inside action'
+    required: true
+    default: false
+  debug_rpms:
+    description: 'Produce debug RPMs - debugsource and debuginfo'
+    required: true
+    default: true
+  who_to_greet:
+    description: 'Who to greet'
+    required: true
+    default: 'World'
 
 # Define your outputs here.
 outputs:
+  built_rpm_array:
+    description: 'JSON array of built RPM files'
+  built_srpm_array:
+    description: 'JSON array of SRPM'
+  rpm_content_type:
+    description: 'Content-type for Upload'
+  artifact_array:
+    description: 'JSON array of artifacts with details'
   time:
     description: The time we greeted you
 
@@ -18,4 +45,6 @@ runs:
   using: docker
   image: Dockerfile
   env:
+    SPEC_FILE: ${{ inputs.spec_file }}
+    ADDITIONAL_REPOS: ${{ inputs.additional_repos }}
     INPUT_WHO_TO_GREET: ${{ inputs.who-to-greet }}
