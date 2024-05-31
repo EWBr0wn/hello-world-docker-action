@@ -262,6 +262,16 @@ if [ -n "${INPUT_SPEC_FILE}" ] ; then
   #output_array=$(cat ${JSONFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]')
   cat ${JSONOUTPUTFILELIST} | jq -c --slurp --arg nvr "${nvr}" --arg dist "${dist}" '[{"NVR":$nvr,"artifactsets":[{"Dist":$dist,"Artifacts": . }]}]' | tee ${JSONOUTPUTARRAY}
   # insert test here to see if output array is too large; mitigate if too large
+  ## Gleaned details from https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idoutputs
+  ## Outputs are Unicode strings, and can be a maximum of 1 MB. The total of all outputs in a workflow run can be a maximum of 50 MB.
+  #
+  ## Placed here because inputs are related and will likely be the next question
+  ## Gleaned details from https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onworkflow_dispatchinputs
+  ## * The workflow will also receive the inputs in the github.event.inputs context. The information in the inputs context and github.event.inputs context is
+  ##   identical except that the inputs context preserves Boolean values as Booleans instead of converting them to strings. The choice type resolves to a string
+  ##   and is a single selectable option.
+  ## * The maximum number of top-level properties for inputs is 10.
+  ## * The maximum payload for inputs is 65,535 characters.
   echo "artifact_array=$(cat ${JSONOUTPUTARRAY})" >> "$GITHUB_OUTPUT"
 fi  # end of if from line 64
 
@@ -269,7 +279,7 @@ fi  # end of if from line 64
 GREETING="Hello, $INPUT_WHO_TO_GREET! from $PRETTY_NAME"
 
 # Use workflow commands to do things like set debug messages
-echo "::notice file=entrypoint.sh,line=272::$GREETING"
+echo "::notice file=entrypoint.sh,line=282::$GREETING"
 
 # Write outputs to the "$GITHUB_OUTPUT" file
 ## echo "greeting=$GREETING" >> "$GITHUB_OUTPUT"
